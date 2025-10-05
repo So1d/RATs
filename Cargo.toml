@@ -1,7 +1,10 @@
 [package]
-name = "rust_autotiling_sway"
-version = "0.1.0"
+name = "rats"
+version = "0.5.0"
 edition = "2024"
 
+[profile.release]
+opt-level = "z"   # otimização máxima para tamanho do binário
+lto = true
 [dependencies]
 i3ipc = "0.10.1"

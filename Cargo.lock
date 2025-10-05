@@ -57,8 +57,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "rust_autotiling_sway"
-version = "0.1.0"
+name = "rats"
+version = "0.5.0"
 dependencies = [
  "i3ipc",
 ]
