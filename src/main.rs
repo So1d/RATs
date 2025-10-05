@@ -23,7 +23,29 @@ fn main() {
                     let tree = connected.get_tree().expect("Failed do get tree");
 
                     match find_focused(&tree) {
-                        FocusedWindow::Here(win_layout) => match win_layout {
+                        FocusedWindow::Here(width, height) => {
+                            println!("Passamo do find focused");
+                            println!("width: {} height: {}", width, height);
+                            if width == 0 {
+                                println!("Problemas mesmo no width")
+                            };
+                            if height == 0 {
+                                println!("Problemas mesmo no height")
+                            };
+                            if width < height {
+                                connected
+                                    .run_command("split v")
+                                    .expect("Falha ao splitar v");
+                                println!("splitamo v");
+                            } else if height < width {
+                                connected
+                                    .run_command("split h")
+                                    .expect("Falha ao splitar h");
+                                println!("splitamo h");
+                            } else {
+                                println!("Algo deu errado");
+                            }
+                        }
 
                         FocusedWindow::NoOne => {
                             connected
@@ -41,13 +63,10 @@ fn main() {
 fn find_focused(tree: &reply::Node) -> FocusedWindow {
     if tree.focused {
         println!("Certamente encontramos a janela focada");
-        let window = tree.rect;
-        let (x, y, width, height) = window;
-        return FocusedWindow::Here(width, height);
+        let window = tree.window_rect;
+        return FocusedWindow::Here(window.2, window.3);
     } else {
         for node in &tree.nodes {
-            let window = node.rect;
-             let (x, y, width, height) = window;
             if let FocusedWindow::Here(width, height) = find_focused(&node) {
                 return FocusedWindow::Here(width, height);
             }
@@ -55,5 +74,4 @@ fn find_focused(tree: &reply::Node) -> FocusedWindow {
     }
     println!("Ou deu merda ou nao achamo nemhuma focada");
     FocusedWindow::NoOne
-    //AVE À RECURSAO PORRAAAAKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK
 }
