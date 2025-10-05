@@ -13,12 +13,13 @@ fn main() {
 
     for event in listener.listen() {
         if let Ok(Event::WindowEvent(eve)) = event {
-            if eve.change == WindowChange::New {
+            if eve.change == WindowChange::Focus {
                 println!("New window has detected");
                 let tree = connected.get_tree().expect("Failed do get tree");
 
                 match rats::find_focused(&tree) {
                     FocusedWindow::Here(width, height) => {
+                        println!("width: {} height: {} ", width, height);
                         if width < height {
                             connected
                                 .run_command("split v")
