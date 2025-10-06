@@ -1,7 +1,7 @@
 use i3ipc::{
     I3Connection, I3EventListener, Subscription,
     event::{Event, inner::WindowChange},
-    reply,
+    reply::{self, NodeLayout, NodeType},
 };
 
 pub enum FocusedWindow {
@@ -19,8 +19,8 @@ fn main() {
     for event in listener.listen() {
         if let Ok(Event::WindowEvent(eve)) = event {
             if eve.change == WindowChange::Focus {
-                println!("New window has detected");
-                let tree = connected.get_tree().expect("Failed do get tree");
+                println!("New focus has detected");
+                let tree = connected.get_tree().expect("Failed to get tree");
 
                 match find_focused(&tree) {
                     FocusedWindow::Here(width, height) => {
@@ -28,20 +28,18 @@ fn main() {
                         if width < height {
                             connected
                                 .run_command("split v")
-                                .expect("Falha ao splitar v");
-                            println!("splitamo v");
+                                .expect("Failed to split vertically");
+                            println!("Splited vertically");
                         } else {
                             connected
                                 .run_command("split h")
-                                .expect("Falha ao splitar h");
-                            println!("splitamo h");
+                                .expect("Failed to split horizontally");
+                            println!("Splited horizontally");
                         }
                     }
 
                     FocusedWindow::NoOne => {
-                        connected
-                            .run_command("nop")
-                            .expect("Nemhuma janela encontrada");
+                        println!("There is no focalized window");
                     }
                 }
             }
@@ -50,10 +48,26 @@ fn main() {
 }
 fn find_focused(tree: &reply::Node) -> FocusedWindow {
     if tree.focused {
+        println!("This window is focused");
         let window = tree.window_rect;
         return FocusedWindow::Here(window.2, window.3);
     } else {
         for node in &tree.nodes {
+            println!("This window is {:#?}", node.nodetype);
+
+            if matches!(node.nodetype, NodeType::FloatingCon | NodeType::DockArea) {
+                println!("This window is {:#?}, not a con", node.nodetype);
+                break;
+            }
+
+            if matches!(
+                node.layout,
+                NodeLayout::Tabbed | NodeLayout::DockArea | NodeLayout::Stacked
+            ) {
+                println!("This window is {:#?}, not a splitable layout", node.layout);
+                break;
+            }
+
             let result = find_focused(&node);
             if let FocusedWindow::Here(width, height) = result {
                 return FocusedWindow::Here(width, height);
