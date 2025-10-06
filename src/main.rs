@@ -1,8 +1,13 @@
 use i3ipc::{
     I3Connection, I3EventListener, Subscription,
     event::{Event, inner::WindowChange},
+    reply,
 };
-use rats::{self, FocusedWindow};
+
+pub enum FocusedWindow {
+    Here(i32, i32),
+    NoOne,
+}
 
 fn main() {
     let mut listener = I3EventListener::connect().expect("Failed to connect event listener on wm");
@@ -17,7 +22,7 @@ fn main() {
                 println!("New window has detected");
                 let tree = connected.get_tree().expect("Failed do get tree");
 
-                match rats::find_focused(&tree) {
+                match find_focused(&tree) {
                     FocusedWindow::Here(width, height) => {
                         println!("width: {} height: {} ", width, height);
                         if width < height {
@@ -42,4 +47,18 @@ fn main() {
             }
         }
     }
+}
+fn find_focused(tree: &reply::Node) -> FocusedWindow {
+    if tree.focused {
+        let window = tree.window_rect;
+        return FocusedWindow::Here(window.2, window.3);
+    } else {
+        for node in &tree.nodes {
+            let result = find_focused(&node);
+            if let FocusedWindow::Here(width, height) = result {
+                return FocusedWindow::Here(width, height);
+            }
+        }
+    }
+    FocusedWindow::NoOne
 }
