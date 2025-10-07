@@ -26,7 +26,7 @@ fn main() {
                 let tree = connected.get_tree().expect("Failed to get tree");
 
                 match find_focused(&tree) {
-                    Option::Some((width, height)) => {
+                    Some((width, height)) => {
                         println!("width: {} height: {} ", width, height);
 
                         let mut cmd = String::new();
@@ -41,7 +41,7 @@ fn main() {
                         connected.run_command(&cmd).expect("Failed to split");
                     }
 
-                    Option::None => {
+                    None => {
                         println!("There is no focalized window");
                     }
                 }
@@ -55,7 +55,7 @@ fn find_focused(tree: &reply::Node) -> Option<(i32, i32)> {
 
         let window = tree.window_rect;
 
-        return Option::Some((window.2, window.3));
+        return Some((window.2, window.3));
     } else {
         for node in &tree.nodes {
             println!("This window is {:#?}", node.nodetype);
@@ -75,10 +75,10 @@ fn find_focused(tree: &reply::Node) -> Option<(i32, i32)> {
 
             let result = find_focused(&node);
 
-            if let Option::Some((width, height)) = result {
-                return Option::Some((width, height));
+            if let Some((width, height)) = result {
+                return Some((width, height));
             }
         }
     }
-    Option::None
+    None
 }
