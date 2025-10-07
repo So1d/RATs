@@ -4,41 +4,44 @@ use i3ipc::{
     reply::{self, NodeLayout, NodeType},
 };
 
-pub enum FocusedWindow {
-    Here(i32, i32),
-    NoOne,
-}
+// enum FocusedWindow {
+//     Here(i32, i32),
+//     NoOne,
+// }
 
 fn main() {
     let mut listener = I3EventListener::connect().expect("Failed to connect event listener on wm");
-    let mut connected = I3Connection::connect().expect("Failed to set connection with wm");
+    let mut connected = I3Connection::connect().expect("Failed to set up connection with wm");
 
-    listener.subscribe(&[Subscription::Window]).unwrap();
+    listener
+        .subscribe(&[Subscription::Window])
+        .expect("Failed to subscribe event listener");
     println!("Hearing events...");
 
     for event in listener.listen() {
         if let Ok(Event::WindowEvent(eve)) = event {
             if eve.change == WindowChange::Focus {
                 println!("New focus has detected");
+
                 let tree = connected.get_tree().expect("Failed to get tree");
 
                 match find_focused(&tree) {
-                    FocusedWindow::Here(width, height) => {
+                    Option::Some((width, height)) => {
                         println!("width: {} height: {} ", width, height);
+
+                        let mut cmd = String::new();
+
                         if width < height {
-                            connected
-                                .run_command("split v")
-                                .expect("Failed to split vertically");
+                            cmd.push_str("split v");
                             println!("Splited vertically");
                         } else {
-                            connected
-                                .run_command("split h")
-                                .expect("Failed to split horizontally");
+                            cmd.push_str("split h");
                             println!("Splited horizontally");
                         }
+                        connected.run_command(&cmd).expect("Failed to split");
                     }
 
-                    FocusedWindow::NoOne => {
+                    Option::None => {
                         println!("There is no focalized window");
                     }
                 }
@@ -46,18 +49,20 @@ fn main() {
         }
     }
 }
-fn find_focused(tree: &reply::Node) -> FocusedWindow {
+fn find_focused(tree: &reply::Node) -> Option<(i32, i32)> {
     if tree.focused {
         println!("This window is focused");
+
         let window = tree.window_rect;
-        return FocusedWindow::Here(window.2, window.3);
+
+        return Option::Some((window.2, window.3));
     } else {
         for node in &tree.nodes {
             println!("This window is {:#?}", node.nodetype);
 
             if matches!(node.nodetype, NodeType::FloatingCon | NodeType::DockArea) {
                 println!("This window is {:#?}, not a con", node.nodetype);
-                break;
+                continue;
             }
 
             if matches!(
@@ -65,14 +70,15 @@ fn find_focused(tree: &reply::Node) -> FocusedWindow {
                 NodeLayout::Tabbed | NodeLayout::DockArea | NodeLayout::Stacked
             ) {
                 println!("This window is {:#?}, not a splitable layout", node.layout);
-                break;
+                continue;
             }
 
             let result = find_focused(&node);
-            if let FocusedWindow::Here(width, height) = result {
-                return FocusedWindow::Here(width, height);
+
+            if let Option::Some((width, height)) = result {
+                return Option::Some((width, height));
             }
         }
     }
-    FocusedWindow::NoOne
+    Option::None
 }
